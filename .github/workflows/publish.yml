@@ -1,7 +1,5 @@
 on:
   push:
-    branches-ignore:
-      - "!main"
     tags:
       - '*'           # Push events to every tag not containing /
   workflow_dispatch:
