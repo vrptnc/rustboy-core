@@ -1,7 +1,13 @@
 [package]
-name = "rustboy"
+name = "rustboy-core"
 version = "0.1.0"
+description = "Core library of the Rustboy Gameboy Color emulator."
+homepage = "https://github.com/vrptnc/rustboy-core"
+repository = "https://github.com/vrptnc/rustboy-core"
 edition = "2021"
+rust-version = "1.69.0"
+license = "MIT"
+
 
 [dependencies]
 byteorder = "1.4.3"
