@@ -1,6 +1,6 @@
 [package]
 name = "rustboy-core"
-version = "0.1.0"
+version = "0.2.0"
 description = "Core library of the Rustboy Gameboy Color emulator."
 homepage = "https://github.com/vrptnc/rustboy-core"
 repository = "https://github.com/vrptnc/rustboy-core"
