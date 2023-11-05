@@ -34,6 +34,7 @@ struct InstructionContext {
 #[derive(Serialize, Deserialize)]
 pub struct CPUImpl {
     enabled: bool,
+    halted: bool,
     stopped: bool,
     context: InstructionContext,
     instructions: VecDeque<Instruction>,
@@ -47,6 +48,10 @@ impl CPU for CPUImpl {
             if let Some(Interrupt::ButtonPressed) = optional_interrupt {
                 self.resume();
                 InstructionDecoder::schedule_call_interrupt_routine(self, Interrupt::ButtonPressed);
+            }
+        } else if self.halted {
+            if (memory.read(MemoryAddress::IF) & 0x1F) != 0x00 {
+                self.unhalt();
             }
         } else if !self.instructions.is_empty() {
             self.execute_machine_cycle(memory);
@@ -108,6 +113,7 @@ impl CPUImpl {
     pub fn new() -> CPUImpl {
         CPUImpl {
             enabled: true,
+            halted: false,
             stopped: false,
             context: InstructionContext {
                 byte_buffer: 0u8,
@@ -468,7 +474,7 @@ impl CPUImpl {
         let carry = f.get_bit(4);
         let half_carry = f.get_bit(5);
         if n {
-            let lower = if half_carry { 6u8 } else { 0u8 };
+            let lower = if half_carry { 0x06u8 } else { 0u8 };
             let upper = if carry { 0x60u8 } else { 0u8 };
             self.subtract_bytes(ByteArithmeticParams {
                 first: ByteLocation::Value(a),
@@ -477,6 +483,7 @@ impl CPUImpl {
                 use_carry: false,
                 flag_mask: 0xB0,
             }, memory);
+            self.registers.write_byte_masked(ByteRegister::F, if carry { 0x10 } else { 0 }, 0x30);
         } else {
             let lower = if half_carry || ((a & 0x0F) >= 0x0A) { 6u8 } else { 0u8 };
             let upper = if carry || (a > 0x99) { 0x60u8 } else { 0u8 };
@@ -487,12 +494,8 @@ impl CPUImpl {
                 use_carry: false,
                 flag_mask: 0xB0,
             }, memory);
+            self.registers.write_byte_masked(ByteRegister::F, if upper == 0x60 { 0x10 } else { 0 }, 0x30);
         };
-        if carry {
-            self.registers.write_byte_masked(ByteRegister::F, 0x10, 0x30);
-        } else {
-            self.registers.write_byte_masked(ByteRegister::F, 0x00, 0x20);
-        }
     }
 
     fn flip_carry_flag(&mut self) {
@@ -504,7 +507,11 @@ impl CPUImpl {
     }
 
     fn halt(&mut self) {
-        //TODO: Implement halt
+        self.halted = true;
+    }
+
+    fn unhalt(&mut self) {
+        self.halted = false;
     }
 
     fn stop(&mut self) {

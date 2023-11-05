@@ -100,7 +100,7 @@ impl ButtonController for ButtonControllerImpl {
 impl Memory for ButtonControllerImpl {
   fn read(&self, address: u16) -> u8 {
     match address {
-      MemoryAddress::P1 => self.action_buttons_register.pressed_buttons() & self.direction_buttons_register.pressed_buttons(),
+      MemoryAddress::P1 => 0xC0 | (self.action_buttons_register.pressed_buttons() & self.direction_buttons_register.pressed_buttons()),
       _ => panic!("ButtonController can't read from address {}", address)
     }
   }
@@ -130,7 +130,7 @@ mod tests {
   #[test]
   fn no_buttons_pressed_no_output_port_low() {
     let controller = ButtonControllerImpl::new();
-    assert_eq_hex!(controller.read(MemoryAddress::P1), 0x3F);
+    assert_eq_hex!(controller.read(MemoryAddress::P1), 0xFF);
   }
 
   #[test]
@@ -139,7 +139,7 @@ mod tests {
     let mut interrupt_controller = MockInterruptController::new();
     interrupt_controller.expect_request_interrupt().never();
     controller.press_button(Button::START, &mut interrupt_controller);
-    assert_eq_hex!(controller.read(MemoryAddress::P1), 0x3F);
+    assert_eq_hex!(controller.read(MemoryAddress::P1), 0xFF);
   }
 
   #[test]
@@ -150,15 +150,15 @@ mod tests {
     controller.write(MemoryAddress::P1, 0x20);
     controller.press_button(Button::A, &mut interrupt_controller);
     controller.press_button(Button::START, &mut interrupt_controller);
-    assert_eq_hex!(controller.read(MemoryAddress::P1), 0x2F);
+    assert_eq_hex!(controller.read(MemoryAddress::P1), 0xEF);
     controller.release_button(Button::A);
     controller.release_button(Button::START);
-    assert_eq_hex!(controller.read(MemoryAddress::P1), 0x2F);
+    assert_eq_hex!(controller.read(MemoryAddress::P1), 0xEF);
     interrupt_controller.expect_request_interrupt().times(2).return_const(());
     controller.write(MemoryAddress::P1, 0x10);
     controller.press_button(Button::A, &mut interrupt_controller);
     controller.press_button(Button::START, &mut interrupt_controller);
-    assert_eq_hex!(controller.read(MemoryAddress::P1), 0x16);
+    assert_eq_hex!(controller.read(MemoryAddress::P1), 0xD6);
   }
 
   #[test]
@@ -169,15 +169,15 @@ mod tests {
     controller.write(MemoryAddress::P1, 0x10);
     controller.press_button(Button::RIGHT, &mut interrupt_controller);
     controller.press_button(Button::DOWN, &mut interrupt_controller);
-    assert_eq_hex!(controller.read(MemoryAddress::P1), 0x1F);
+    assert_eq_hex!(controller.read(MemoryAddress::P1), 0xDF);
     controller.release_button(Button::RIGHT);
     controller.release_button(Button::DOWN);
-    assert_eq_hex!(controller.read(MemoryAddress::P1), 0x1F);
+    assert_eq_hex!(controller.read(MemoryAddress::P1), 0xDF);
     interrupt_controller.expect_request_interrupt().times(2).return_const(());
     controller.write(MemoryAddress::P1, 0x20);
     controller.press_button(Button::RIGHT, &mut interrupt_controller);
     controller.press_button(Button::DOWN, &mut interrupt_controller);
-    assert_eq_hex!(controller.read(MemoryAddress::P1), 0x26);
+    assert_eq_hex!(controller.read(MemoryAddress::P1), 0xE6);
   }
 
   #[test]
@@ -188,7 +188,7 @@ mod tests {
     controller.press_button(Button::START, &mut interrupt_controller);
     controller.release_button(Button::A);
     controller.write(MemoryAddress::P1, 0x10);
-    assert_eq_hex!(controller.read(MemoryAddress::P1), 0x17);
+    assert_eq_hex!(controller.read(MemoryAddress::P1), 0xD7);
   }
 
   #[test]
@@ -198,9 +198,9 @@ mod tests {
     controller.press_button(Button::A, &mut interrupt_controller);
     controller.press_button(Button::START, &mut interrupt_controller);
     controller.write(MemoryAddress::P1, 0x10);
-    assert_eq_hex!(controller.read(MemoryAddress::P1), 0x16);
+    assert_eq_hex!(controller.read(MemoryAddress::P1), 0xD6);
     controller.write(MemoryAddress::P1, 0x20);
-    assert_eq_hex!(controller.read(MemoryAddress::P1), 0x2F);
+    assert_eq_hex!(controller.read(MemoryAddress::P1), 0xEF);
   }
 
   #[test]

@@ -1,8 +1,10 @@
 use std::cell::{RefCell, RefMut};
+use log::info;
 
 use crate::internal::memory::mbc::{Loadable, MBC};
-use crate::internal::memory::memory::{Memory, RAMSize, ROMSize};
+use crate::internal::memory::memory::Memory;
 use crate::internal::util::bit_util::{BitUtil, WordUtil};
+use crate::memory::{RAMSize, ROMSize};
 
 #[derive(Copy, Clone)]
 struct FormattedRTC {
@@ -151,6 +153,7 @@ impl MBC for MBC3 {
 
 impl MBC3 {
     pub fn new(rom_size: ROMSize, ram_size: RAMSize) -> MBC3 {
+        info!("Loading new MBC3 cartridge with ROM size {:?} and RAM size {:?}", rom_size, ram_size);
         MBC3 {
             rtc: RTC::new(),
             rtc_registers: RTC::new(),

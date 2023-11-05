@@ -1,5 +1,7 @@
+use log::info;
 use crate::internal::memory::mbc::{Loadable, MBC};
-use crate::internal::memory::memory::{Memory, ROMSize};
+use crate::internal::memory::memory::Memory;
+use crate::memory::ROMSize;
 
 pub struct MBC0 {
     rom: Vec<u8>,
@@ -9,6 +11,7 @@ impl MBC for MBC0 {}
 
 impl MBC0 {
     pub fn new(rom_size: ROMSize) -> MBC0 {
+        info!("Loading new MBC0 cartridge of size {:?}", rom_size);
         MBC0 {
             rom: vec![0; rom_size.bytes()],
         }

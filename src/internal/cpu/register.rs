@@ -132,8 +132,8 @@ impl Registers {
       0, // L
       0, // P
       0, // C
-      0, // S
-      0  // P
+      0xFF, // S
+      0xFE  // P
     ])
   }
 
@@ -142,7 +142,11 @@ impl Registers {
   }
 
   pub fn write_byte(&mut self, register: ByteRegister, value: u8) {
-    self.0[register.offset()] = value;
+    if let ByteRegister::F = register {
+      self.0[register.offset()] = value & 0xF0;
+    } else {
+      self.0[register.offset()] = value;
+    }
   }
 
   pub fn write_byte_masked(&mut self, register: ByteRegister, value: u8, mask: u8) {
@@ -154,7 +158,11 @@ impl Registers {
   }
 
   pub fn write_word(&mut self, register: WordRegister, value: u16) {
-    (&mut self.0[register.offset()..]).write_u16::<BigEndian>(value).unwrap();
+    if let WordRegister::AF = register {
+      (&mut self.0[register.offset()..]).write_u16::<BigEndian>(value & 0xFFF0).unwrap();
+    } else {
+      (&mut self.0[register.offset()..]).write_u16::<BigEndian>(value).unwrap();
+    }
   }
 }
 

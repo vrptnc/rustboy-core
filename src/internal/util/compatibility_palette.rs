@@ -1,9 +1,6 @@
-use std::cell::RefCell;
-use std::rc::Rc;
-
-use crate::internal::memory::mbc::MBC;
-use crate::renderer::Color;
+use crate::cartridge_info::CartridgeInfo;
 use crate::internal::util::bit_util::BitUtil;
+use crate::renderer::Color;
 
 #[derive(Copy, Clone)]
 pub struct CompatibilityPalettes {
@@ -190,25 +187,22 @@ impl CompatibilityPaletteLoader {
     'R'
   ];
 
-  pub fn get_compatibility_palettes(rom: Rc<RefCell<dyn MBC>>) -> CompatibilityPalettes {
-    let borrowed_rom = (*rom).borrow();
-    let palette_id = if borrowed_rom.is_licensed_by_nintendo() {
-      let title_checksum = borrowed_rom.title_checksum();
+  pub fn get_compatibility_palettes(cartridge_info: &CartridgeInfo) -> CompatibilityPalettes {
+    let palette_id = if cartridge_info.licensee.is_licensed_by_nintendo() {
+      let title_checksum = cartridge_info.title_checksum;
       if let Some(checksum_index) = CompatibilityPaletteLoader::TITLE_CHECKSUMS.into_iter().position(|value| value == title_checksum) {
         if checksum_index <= 64 {
           checksum_index
         } else {
           // Do a 4th letter check
-          let fourth_letter = borrowed_rom.fourth_title_letter();
+          let fourth_letter = cartridge_info.get_title().chars().nth(3).unwrap();
           let offset_checksum_index = checksum_index - 65;
-          if let Some(row) = CompatibilityPaletteLoader::TITLE_FOURTH_LETTERS.into_iter()
+          CompatibilityPaletteLoader::TITLE_FOURTH_LETTERS.into_iter()
             .skip(offset_checksum_index)
             .step_by(14)
-            .position(|letter| letter as u8 == fourth_letter) {
-            checksum_index + (14 * row)
-          } else {
-            0x00
-          }
+            .position(|letter| letter == fourth_letter)
+            .map(|row| checksum_index + 14 * row)
+            .unwrap_or(0x00)
         }
       } else {
         0x00
@@ -235,18 +229,22 @@ impl CompatibilityPaletteLoader {
 
 #[cfg(test)]
 mod tests {
-  use crate::internal::memory::mbc::MockROM;
+  use crate::memory::{CartridgeType, CGBMode, Licensee, RAMSize, ROMSize};
 
   use super::*;
 
   #[test]
   fn get_pokemon_red_compatibility_palette() {
-    let mut rom = MockROM::new();
-    rom.expect_is_licensed_by_nintendo().once().return_const(true);
-    rom.expect_title_checksum().once().return_const(0x14);
-    rom.expect_fourth_title_letter().never();
-    let boxed_rom = Rc::new(RefCell::new(rom));
-    let result = CompatibilityPaletteLoader::get_compatibility_palettes(boxed_rom);
+    let cartridge_info = CartridgeInfo {
+      title: String::from("POKEMON RED"),
+      title_checksum: 0x14,
+      licensee: Licensee::NewLicensee('0', '1'),
+      cartridge_type: CartridgeType::MBC1,
+      rom_size: ROMSize::KB512,
+      ram_size: RAMSize::KB32,
+      cgb_mode: CGBMode::Monochrome,
+    };
+    let result = CompatibilityPaletteLoader::get_compatibility_palettes(&cartridge_info);
     assert_eq!(result.bgp[0], Color::from_rgb(0xFF, 0xFF, 0xFF).to_rgb555());
     assert_eq!(result.bgp[1], Color::from_rgb(0xFF, 0x84, 0x84).to_rgb555());
     assert_eq!(result.bgp[2], Color::from_rgb(0x94, 0x3A, 0x3A).to_rgb555());
@@ -263,12 +261,16 @@ mod tests {
 
   #[test]
   fn get_loz_links_awakening_compatibility_palette() {
-    let mut rom = MockROM::new();
-    rom.expect_is_licensed_by_nintendo().once().return_const(true);
-    rom.expect_title_checksum().once().return_const(0x70);
-    rom.expect_fourth_title_letter().never();
-    let boxed_rom = Rc::new(RefCell::new(rom));
-    let result = CompatibilityPaletteLoader::get_compatibility_palettes(boxed_rom);
+    let cartridge_info = CartridgeInfo {
+      title: String::from("ZELDA"),
+      title_checksum: 0x70,
+      licensee: Licensee::OldLicensee(0x01),
+      cartridge_type: CartridgeType::MBC1,
+      rom_size: ROMSize::KB512,
+      ram_size: RAMSize::KB8,
+      cgb_mode: CGBMode::Monochrome,
+    };
+    let result = CompatibilityPaletteLoader::get_compatibility_palettes(&cartridge_info);
     assert_eq!(result.bgp[0], Color::from_rgb(0xFF, 0xFF, 0xFF).to_rgb555());
     assert_eq!(result.bgp[1], Color::from_rgb(0xFF, 0x84, 0x84).to_rgb555());
     assert_eq!(result.bgp[2], Color::from_rgb(0x94, 0x3A, 0x3A).to_rgb555());
@@ -285,12 +287,16 @@ mod tests {
 
   #[test]
   fn get_kirby_dream_land_compatibility_palette() {
-    let mut rom = MockROM::new();
-    rom.expect_is_licensed_by_nintendo().once().return_const(true);
-    rom.expect_title_checksum().once().return_const(0xB3);
-    rom.expect_fourth_title_letter().once().return_const(0x42); // 'B'
-    let boxed_rom = Rc::new(RefCell::new(rom));
-    let result = CompatibilityPaletteLoader::get_compatibility_palettes(boxed_rom);
+    let cartridge_info = CartridgeInfo {
+      title: String::from("KIRBY DREAM LAND"),
+      title_checksum: 0xB3,
+      licensee: Licensee::OldLicensee(0x01),
+      cartridge_type: CartridgeType::MBC1,
+      rom_size: ROMSize::KB256,
+      ram_size: RAMSize::Unavailable,
+      cgb_mode: CGBMode::Monochrome,
+    };
+    let result = CompatibilityPaletteLoader::get_compatibility_palettes(&cartridge_info);
     assert_eq!(result.bgp[0], Color::from_rgb(0xA5, 0x9C, 0xFF).to_rgb555());
     assert_eq!(result.bgp[1], Color::from_rgb(0xFF, 0xFF, 0x00).to_rgb555());
     assert_eq!(result.bgp[2], Color::from_rgb(0x00, 0x63, 0x00).to_rgb555());

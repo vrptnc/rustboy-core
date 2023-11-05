@@ -1,5 +1,7 @@
+use log::info;
 use crate::internal::memory::mbc::{Loadable, MBC};
-use crate::internal::memory::memory::{Memory, RAMSize, ROMSize};
+use crate::internal::memory::memory::Memory;
+use crate::memory::{RAMSize, ROMSize};
 
 pub struct MBC5 {
   ram_enabled: bool,
@@ -13,6 +15,7 @@ impl MBC for MBC5 {}
 
 impl MBC5 {
   pub fn new(rom_size: ROMSize, ram_size: RAMSize) -> MBC5 {
+    info!("Loading new MBC5 cartridge with ROM size {:?} and RAM size {:?}", rom_size, ram_size);
     MBC5 {
       ram_enabled: false,
       ram_bank_address: 0x00,

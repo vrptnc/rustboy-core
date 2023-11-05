@@ -60,7 +60,7 @@ impl Memory for TimerControllerImpl {
       MemoryAddress::DIV => self.divider.get_upper_byte(),
       MemoryAddress::TIMA => self.timer_counter,
       MemoryAddress::TMA => self.timer_modulo,
-      MemoryAddress::TAC => self.timer_controller,
+      MemoryAddress::TAC => 0xF8 | self.timer_controller,
       _ => panic!("Can't read address {} on timer", address)
     }
   }

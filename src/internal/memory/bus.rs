@@ -1,11 +1,8 @@
-use std::cell::RefCell;
-use std::rc::Rc;
-
 use crate::internal::memory::mbc::MBC;
 use crate::internal::memory::memory::Memory;
 
 pub struct MemoryBus<'a> {
-  pub rom: Rc<RefCell<dyn MBC>>,
+  pub rom: &'a mut Box<dyn MBC>,
   pub vram: &'a mut dyn Memory,
   pub wram: &'a mut dyn Memory,
   pub reserved_area_1: &'a mut dyn Memory,
@@ -27,21 +24,25 @@ pub struct MemoryBus<'a> {
 impl<'a> Memory for MemoryBus<'a> {
   fn read(&self, address: u16) -> u8 {
     match address {
-      0x0000..=0x7FFF => (*self.rom).borrow().read(address),
+      0x0000..=0x7FFF => self.rom.read(address),
       0x8000..=0x9FFF => self.vram.read(address),
-      0xA000..=0xBFFF => (*self.rom).borrow().read(address),
+      0xA000..=0xBFFF => self.rom.read(address),
       0xC000..=0xDFFF => self.wram.read(address),
       0xE000..=0xFDFF => self.reserved_area_1.read(address),
       0xFE00..=0xFE9F => self.oam.read(address),
       0xFEA0..=0xFEA1 => self.interrupt_controller.read(address),
       0xFEA2..=0xFEFF => self.reserved_area_2.read(address),
       0xFF00 => self.button_controller.read(address),
-      0xFF01..=0xFF02 => 0, // TODO: implement serial transfer
+      0xFF01..=0xFF02 => 0xFF, // TODO: implement serial transfer
       0xFF03 => self.unmapped_memory.read(address),
       0xFF04..=0xFF07 => self.timer.read(address),
       0xFF08..=0xFF0E => self.unmapped_memory.read(address),
       0xFF0F => self.interrupt_controller.read(address),
-      0xFF10..=0xFF26 => self.audio_controller.read(address),
+      0xFF10..=0xFF14 => self.audio_controller.read(address),
+      0xFF15 => self.unmapped_memory.read(address),
+      0xFF16..=0xFF1E => self.audio_controller.read(address),
+      0xFF1F => self.unmapped_memory.read(address),
+      0xFF20..=0xFF26 => self.audio_controller.read(address),
       0xFF27..=0xFF2F => self.unmapped_memory.read(address),
       0xFF30..=0xFF3F => self.audio_controller.read(address),
       0xFF40..=0xFF45 => self.lcd.read(address),
@@ -62,15 +63,15 @@ impl<'a> Memory for MemoryBus<'a> {
       0xFF70 => self.wram.read(address),
       0xFF71..=0xFF7F => self.unmapped_memory.read(address),
       0xFF80..=0xFFFE => self.stack.read(address),
-      0xFFFF => self.interrupt_controller.read(0xFFFF),
+      0xFFFF => self.interrupt_controller.read(address),
     }
   }
 
   fn write(&mut self, address: u16, value: u8) {
     match address {
-      0x0000..=0x7FFF => (*self.rom).borrow_mut().write(address, value),
+      0x0000..=0x7FFF => self.rom.write(address, value),
       0x8000..=0x9FFF => self.vram.write(address, value),
-      0xA000..=0xBFFF => (*self.rom).borrow_mut().write(address, value),
+      0xA000..=0xBFFF => self.rom.write(address, value),
       0xC000..=0xDFFF => self.wram.write(address, value),
       0xE000..=0xFDFF => self.reserved_area_1.write(address, value),
       0xFE00..=0xFE9F => self.oam.write(address, value),
@@ -82,7 +83,11 @@ impl<'a> Memory for MemoryBus<'a> {
       0xFF04..=0xFF07 => self.timer.write(address, value),
       0xFF08..=0xFF0E => self.unmapped_memory.write(address, value),
       0xFF0F => self.interrupt_controller.write(address, value),
-      0xFF10..=0xFF26 => self.audio_controller.write(address, value),
+      0xFF10..=0xFF14 => self.audio_controller.write(address, value),
+      0xFF15 => self.unmapped_memory.write(address, value),
+      0xFF16..=0xFF1E => self.audio_controller.write(address, value),
+      0xFF1F => self.unmapped_memory.write(address, value),
+      0xFF20..=0xFF26 => self.audio_controller.write(address, value),
       0xFF27..=0xFF2F => self.unmapped_memory.write(address, value),
       0xFF30..=0xFF3F => self.audio_controller.write(address, value),
       0xFF40..=0xFF45 => self.lcd.write(address, value),

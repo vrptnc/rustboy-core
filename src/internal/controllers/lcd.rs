@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 use crate::memory::OAMObject;
 use crate::internal::cpu::interrupts::{Interrupt, InterruptController};
 use crate::internal::memory::cram::CRAM;
-use crate::internal::memory::memory::{CGBMode, Memory, MemoryAddress};
+use crate::internal::memory::memory::{Memory, MemoryAddress};
 use crate::internal::memory::oam::{OAM, ObjectReference};
 use crate::internal::memory::vram::{BackgroundParams, ObjectParams, Point, TileAddressingMode, TileMapIndex, VRAM, WindowParams};
 use crate::renderer::{Color, Renderer, RenderTarget};
@@ -102,7 +102,6 @@ pub trait LCDController {
 
 #[derive(Serialize, Deserialize)]
 pub struct LCDControllerImpl {
-  cgb_mode: CGBMode,
   current_object_index: u8,
   intersecting_object_references: Vec<ObjectReference>,
   dot: u32,
@@ -128,9 +127,8 @@ impl LCDController for LCDControllerImpl {
 }
 
 impl LCDControllerImpl {
-  pub fn new(cgb_mode: CGBMode) -> LCDControllerImpl {
+  pub fn new() -> LCDControllerImpl {
     LCDControllerImpl {
-      cgb_mode,
       current_object_index: 0,
       intersecting_object_references: vec![],
       dot: 0,
@@ -425,7 +423,7 @@ impl Memory for LCDControllerImpl {
   fn read(&self, address: u16) -> u8 {
     match address {
       MemoryAddress::LCDC => self.lcdc.0,
-      MemoryAddress::STAT => self.stat.0,
+      MemoryAddress::STAT => 0x80 | self.stat.0,
       MemoryAddress::SCY => self.scy,
       MemoryAddress::SCX => self.scx,
       MemoryAddress::LY => self.line,
@@ -466,7 +464,7 @@ pub mod tests {
 
   #[test]
   fn stat_blocking() {
-    let mut controller = LCDControllerImpl::new(CGBMode::Color);
+    let mut controller = LCDControllerImpl::new();
     let mut renderer = MockRenderer::new();
     let mut interrupt_controller = MockInterruptController::new();
     interrupt_controller.expect_request_interrupt().never();
