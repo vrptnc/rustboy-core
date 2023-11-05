@@ -1,5 +1,7 @@
+use log::info;
 use crate::internal::memory::mbc::{Loadable, MBC};
-use crate::internal::memory::memory::{Memory, RAMSize, ROMSize};
+use crate::internal::memory::memory::Memory;
+use crate::memory::{RAMSize, ROMSize};
 
 pub struct MBC1 {
   ram_enabled: bool,
@@ -14,6 +16,7 @@ impl MBC for MBC1 {}
 
 impl MBC1 {
   pub fn new(rom_size: ROMSize, ram_size: RAMSize) -> MBC1 {
+    info!("Loading new MBC1 cartridge with ROM size {:?} and RAM size {:?}", rom_size, ram_size);
     MBC1 {
       ram_enabled: false,
       upper_bank_address_enabled: false,
@@ -40,11 +43,11 @@ impl Memory for MBC1 {
     match address {
       0x0000..=0x3FFF => {
         let address_in_rom = ((address as usize) & 0x3FFF) | (if self.upper_bank_address_enabled { self.upper_bank_address << 19 } else { 0 });
-        self.rom[address_in_rom]
+        self.rom[address_in_rom % self.rom.len()]
       }
       0x4000..=0x7FFF => {
         let address_in_rom = ((address as usize) & 0x3FFF) | (self.lower_bank_address << 14) | (self.upper_bank_address << 19);
-        self.rom[address_in_rom]
+        self.rom[address_in_rom % self.rom.len()]
       }
       0xA000..=0xBFFF => {
         let address_in_ram = ((address as usize) & 0x1FFF) | (if self.upper_bank_address_enabled { self.upper_bank_address << 13 } else { 0 });

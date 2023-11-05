@@ -1,6 +1,7 @@
 use mockall::mock;
 
-use crate::internal::memory::memory::{CGBMode, Memory};
+use crate::internal::memory::memory::Memory;
+use crate::memory::CGBMode;
 
 pub trait Loadable {
   fn load_byte(&mut self, address: usize, value: u8);
@@ -15,8 +16,8 @@ pub trait MBC: Memory + Loadable {
   fn is_licensed_by_nintendo(&self) -> bool {
     let old_licensee_code = self.read(0x014B);
     let licensee_code = if old_licensee_code == 0x33 {
-      let upper = (self.read(0x0144) as char).to_digit(16).unwrap() as u8;
-      let lower = (self.read(0x0145) as char).to_digit(16).unwrap() as u8;
+      let upper = (self.read(0x0144) as char).to_digit(16).unwrap_or(0) as u8;
+      let lower = (self.read(0x0145) as char).to_digit(16).unwrap_or(0) as u8;
       let new_licensee_code = (upper << 4) | lower;
       new_licensee_code
     } else {

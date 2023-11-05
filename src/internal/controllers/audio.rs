@@ -206,7 +206,7 @@ impl Memory for AudioControllerImpl {
   fn read(&self, address: u16) -> u8 {
     match address {
       MemoryAddress::NR10 => {
-        self.ch1_pulse_player.new_settings.shift |
+        0x80 | self.ch1_pulse_player.new_settings.shift |
           ((self.ch1_pulse_player.new_settings.decrease as u8) << 3) |
           (self.ch1_pulse_player.new_settings.pace << 4)
       }
@@ -226,7 +226,7 @@ impl Memory for AudioControllerImpl {
       }
       MemoryAddress::NR13 => self.ch1_pulse_player.new_settings.get_lower_wavelength_bits(),
       MemoryAddress::NR14 => {
-        self.ch1_pulse_player.new_settings.get_upper_wavelength_bits() |
+        0x38 | self.ch1_pulse_player.new_settings.get_upper_wavelength_bits() |
           ((self.ch1_length_timer.enabled as u8) << 6)
       }
       0xFF15 => 0,
@@ -249,27 +249,28 @@ impl Memory for AudioControllerImpl {
         self.ch2_pulse_player.new_settings.get_upper_wavelength_bits() |
           ((self.ch2_length_timer.enabled as u8) << 6)
       }
-      MemoryAddress::NR30 => if self.ch3_custom_wave_player.dac_enabled { 0x80 } else { 0 },
+      MemoryAddress::NR30 => if self.ch3_custom_wave_player.dac_enabled { 0xFF } else { 0x7F },
       MemoryAddress::NR31 => self.ch3_length_timer.new_settings.initial_value as u8,
-      MemoryAddress::NR32 => self.ch3_custom_wave_player.gain << 5,
+      MemoryAddress::NR32 => 0x9F | (self.ch3_custom_wave_player.gain << 5),
       MemoryAddress::NR33 => self.ch3_custom_wave_player.get_lower_wavelength_bits(),
       MemoryAddress::NR34 => {
         self.ch3_custom_wave_player.get_upper_wavelength_bits() |
           ((self.ch3_length_timer.enabled as u8) << 6)
       }
       0xFF1F => 0,
-      MemoryAddress::NR41 => self.ch4_length_timer.new_settings.initial_value as u8,
+      MemoryAddress::NR41 => 0xC0 | self.ch4_length_timer.new_settings.initial_value as u8,
       MemoryAddress::NR42 => self.ch4_gain_controller.new_settings.pace |
         ((self.ch4_gain_controller.new_settings.ascending as u8) << 3) |
         (self.ch4_gain_controller.new_settings.initial_value << 4),
       MemoryAddress::NR43 => (self.ch4_noise_player.clock_shift << 4) |
         ((self.ch4_noise_player.short as u8) << 3) |
         self.ch4_noise_player.clock_divider,
-      MemoryAddress::NR44 => (self.ch4_length_timer.enabled as u8) << 6,
+      MemoryAddress::NR44 => 0x3F | ((self.ch4_length_timer.enabled as u8) << 6),
       MemoryAddress::NR50 => self.master_volume,
       MemoryAddress::NR51 => self.mixing_control,
       MemoryAddress::NR52 => {
-        (self.ch1_pulse_player.playing as u8) |
+        0x70 |
+          (self.ch1_pulse_player.playing as u8) |
           ((self.ch2_pulse_player.playing as u8) << 1) |
           ((self.ch3_custom_wave_player.playing as u8) << 2) |
           ((self.ch4_noise_player.playing as u8) << 3) |

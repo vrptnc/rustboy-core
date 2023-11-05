@@ -111,7 +111,7 @@ impl InterruptController for InterruptControllerImpl {
 impl Memory for InterruptControllerImpl {
   fn read(&self, address: u16) -> u8 {
     match address {
-      MemoryAddress::IF => self.interrupt_request,
+      MemoryAddress::IF => 0xE0 | self.interrupt_request,
       MemoryAddress::IE => self.interrupt_enable,
       MemoryAddress::IME => if self.interrupt_master_enable { 1 } else { 0 },
       // Strictly speaking, address 0xFEA1 is in a prohibited address range, but this is a dirty hack to allow

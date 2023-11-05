@@ -505,13 +505,14 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c08c74e62047bb2de4ff487b251e4a92e24f48745648451635cec7d591162d9f"
 
 [[package]]
-name = "rustboy"
-version = "0.1.0"
+name = "rustboy-core"
+version = "0.2.0"
 dependencies = [
  "assert_hex",
  "bincode",
  "byteorder",
  "itertools",
+ "log",
  "mockall",
  "num",
  "serde",

@@ -1,3 +1,4 @@
+use log::info;
 use serde::{Deserialize, Serialize};
 
 use crate::internal::controllers::lcd::{LCDController, LCDMode};
@@ -6,7 +7,7 @@ use crate::internal::infrastructure::toggle::Toggle;
 use crate::internal::memory::memory::{Memory, MemoryAddress};
 use crate::internal::util::bit_util::BitUtil;
 
-#[derive(PartialEq, Serialize, Deserialize)]
+#[derive(PartialEq, Serialize, Deserialize, Debug)]
 enum DMATransferType {
     Inactive,
     Legacy,
@@ -187,7 +188,9 @@ impl Memory for DMAControllerImpl {
         match address {
             MemoryAddress::DMA => {
                 self.dma = value;
-                self.active_transfer = DMATransfer::legacy((value as u16) * 0x100);
+                let source_address = (value as u16) * 0x100;
+                info!("Setting up Legacy DMATransfer from source address {:#x}", source_address);
+                self.active_transfer = DMATransfer::legacy(source_address);
             }
             MemoryAddress::HDMA1 => self.high_source_address = value,
             MemoryAddress::HDMA2 => self.low_source_address = value & 0xF0,
@@ -205,6 +208,7 @@ impl Memory for DMAControllerImpl {
                         } else {
                             DMATransferType::GeneralPurpose
                         };
+                        info!("Setting up {:?} DMATransfer from source address {:#x} to destination {:#x} of length {}", transfer_type, source_address, destination_address, bytes_to_transfer);
                         self.active_transfer = DMATransfer::new(
                             source_address,
                             destination_address,

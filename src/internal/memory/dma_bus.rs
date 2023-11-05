@@ -1,11 +1,8 @@
-use std::cell::RefCell;
-use std::rc::Rc;
-
 use crate::internal::memory::mbc::MBC;
 use crate::internal::memory::memory::Memory;
 
 pub struct DMAMemoryBus<'a> {
-  pub rom: Rc<RefCell<dyn MBC>>,
+  pub rom: &'a mut Box<dyn MBC>,
   pub vram: &'a mut dyn Memory,
   pub wram: &'a mut dyn Memory,
   pub oam: &'a mut dyn Memory,
@@ -14,9 +11,9 @@ pub struct DMAMemoryBus<'a> {
 impl<'a> Memory for DMAMemoryBus<'a> {
   fn read(&self, address: u16) -> u8 {
     match address {
-      0x0000..=0x7FFF => self.rom.borrow().read(address),
+      0x0000..=0x7FFF => self.rom.read(address),
       0x8000..=0x9FFF => self.vram.read(address),
-      0xA000..=0xBFFF => self.rom.borrow().read(address),
+      0xA000..=0xBFFF => self.rom.read(address),
       0xC000..=0xDFFF => self.wram.read(address),
       _ => panic!("DMABus can't read from address {}", address)
     }
